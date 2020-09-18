@@ -76,13 +76,16 @@ func (s *RedisStore) New(r *http.Request, name string) (*sessions.Session, error
 
 // Save adds a single session to the response.
 //
-// If the Options.MaxAge of the session is <= 0 then the session file will be
+// If the Options.MaxAge of the session is < 0 then the session file will be
 // deleted from the store. With this process it enforces the properly
 // session cookie handling so no need to trust in the cookie management in the
 // web browser.
 func (s *RedisStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
-	// Delete if max-age is <= 0
-	if session.Options.MaxAge <= 0 {
+	// https://github.com/gin-contrib/sessions/blob/master/session_options_go1.11.go#L15
+	// MaxAge=0 means no 'Max-Age' attribute specified.
+
+	// Delete if max-age is < 0
+	if session.Options.MaxAge < 0 {
 		if err := s.delete(session); err != nil {
 			return err
 		}
