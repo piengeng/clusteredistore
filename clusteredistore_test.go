@@ -38,11 +38,11 @@ func TestSuite_Basic(t *testing.T) {
 		store := createStore(t, keyPrefix, sessions.Options{Path: "/", Domain: "example.com", MaxAge: 60 * 5})
 		request, err := http.NewRequest("GET", "http://www.example.com", nil)
 		if err != nil {
-			t.Fatal("failed to create request", err)
+			t.Fatal("failed to create request:", err)
 		}
 		session, err := store.New(request, "hello")
 		if err != nil {
-			t.Fatal("failed to create session", err)
+			t.Fatal("failed to create session:", err)
 		}
 		if session.IsNew == false {
 			t.Fatal("session is not new")
@@ -55,7 +55,7 @@ func TestSuite_Basic(t *testing.T) {
 		store.SetOptions(opts)
 		request, err := http.NewRequest("GET", "http://www.example.com", nil)
 		if err != nil {
-			t.Fatal("failed to create request", err)
+			t.Fatal("failed to create request:", err)
 		}
 		session, _ := store.New(request, "hello")
 		if session.Options.Path != opts.Path || session.Options.MaxAge != opts.MaxAge {
@@ -67,17 +67,17 @@ func TestSuite_Basic(t *testing.T) {
 		store := createStore(t, keyPrefix, sessions.Options{Path: "/", Domain: "example.com", MaxAge: 60 * 5})
 		request, err := http.NewRequest("GET", "http://www.example.com", nil)
 		if err != nil {
-			t.Fatal("failed to create request", err)
+			t.Fatal("failed to create request:", err)
 		}
 		w := httptest.NewRecorder()
 		session, err := store.New(request, "hello")
 		if err != nil {
-			t.Fatal("failed to create session", err)
+			t.Fatal("failed to create session:", err)
 		}
 		session.Values["key"] = "value"
 		err = session.Save(request, w)
 		if err != nil {
-			t.Fatal("failed to save: ", err)
+			t.Fatal("failed to save:", err)
 		}
 	})
 
@@ -85,27 +85,27 @@ func TestSuite_Basic(t *testing.T) {
 		store := createStore(t, keyPrefix, sessions.Options{Path: "/", Domain: "example.com", MaxAge: 60 * 5})
 		request, err := http.NewRequest("GET", "http://www.example.com", nil)
 		if err != nil {
-			t.Fatal("failed to create request", err)
+			t.Fatal("failed to create request:", err)
 		}
 		w := httptest.NewRecorder()
 		session, err := store.New(request, "hello")
 		if err != nil {
-			t.Fatal("failed to create session", err)
+			t.Fatal("failed to create session:", err)
 		}
 		session.Values["username"] = "henry"
 		err = session.Save(request, w)
 		if err != nil {
-			t.Fatal("failed to save session: ", err)
+			t.Fatal("failed to save session:", err)
 		}
 		session.Options.MaxAge = -1 // comment this to see un-delete session still exists
 		err = session.Save(request, w)
 		if err != nil {
-			t.Fatal("failed to delete session: ", err)
+			t.Fatal("failed to delete session:", err)
 		}
 		target := keyPrefix + session.ID
 		// session.Save() doesn't always reflect the key existence, using redis client to check
 		if client.Exists(target).Val() == 1 {
-			t.Fatal("delete target still exists: ", session.ID)
+			t.Fatal("delete target still exists:", session.ID)
 		}
 	})
 }

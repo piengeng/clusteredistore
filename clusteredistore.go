@@ -15,6 +15,9 @@ import (
 	"github.com/gorilla/sessions"
 )
 
+const randomByteLength = uint8(16)
+const defaultMaxAge = 86400 * 1 // 1 day
+
 // RedisStore stores gorilla sessions in Redis
 type RedisStore struct {
 	// client to connect to redis
@@ -30,18 +33,18 @@ type RedisStore struct {
 }
 
 // KeyGenFunc defines a function used by store to generate a key
-type KeyGenFunc func() (string, error)
+type KeyGenFunc func(uint8) (string, error)
 
 // NewRedisStore returns a new RedisStore with default configuration
 func NewRedisStore(client redis.UniversalClient) *RedisStore {
 	rs := RedisStore{
 		Options: &sessions.Options{
 			Path:   "/",
-			MaxAge: 86400 * 30,
+			MaxAge: defaultMaxAge,
 		},
 		client:     client,
-		keyPrefix:  "session:",
-		keyGen:     generateRandomKey,
+		keyPrefix:  "sid:",
+		keyGen:     generateRandomKeyByLength,
 		serializer: GobSerializer{},
 	}
 	return &rs
@@ -94,7 +97,7 @@ func (s *RedisStore) Save(r *http.Request, w http.ResponseWriter, session *sessi
 	}
 
 	if session.ID == "" {
-		id, err := s.keyGen()
+		id, err := s.keyGen(randomByteLength)
 		if err != nil {
 			return errors.New("redisstore: failed to generate session id")
 		}
@@ -184,9 +187,15 @@ func (gs GobSerializer) Deserialize(d []byte, s *sessions.Session) error {
 	return dec.Decode(&s.Values)
 }
 
-// generateRandomKey returns a new random key
-func generateRandomKey() (string, error) {
-	k := make([]byte, 64)
+func generateRandomKeyByLength(l uint8) (string, error) {
+	// checking permutation of base32 and length
+	// session should not persist for extended period of time, depends on use case, adjust accordingly
+	// are you going to have this many unique sessions on your system?
+	// P(32, 8) =                424,097,856,000 possibilities
+	// P(32,12) =        108,155,131,628,544,000 possibilities
+	// P(32,16) = 12,576,278,705,767,096,320,000 possibilities, this seems reasonable, lol
+	// func generate P(32,26) string, with randomByteLength = 16, go figures
+	k := make([]byte, l)
 	if _, err := io.ReadFull(rand.Reader, k); err != nil {
 		return "", err
 	}
